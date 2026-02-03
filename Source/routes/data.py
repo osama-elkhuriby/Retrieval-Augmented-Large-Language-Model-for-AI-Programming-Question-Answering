@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, UploadFile, File
+from fastapi import FastAPI, APIRouter, Depends, UploadFile
 import os
 from helpers.config import get_settings, Settings
 from controllers import DataController
