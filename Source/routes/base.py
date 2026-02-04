@@ -2,6 +2,8 @@ from fastapi import FastAPI, APIRouter, Depends
 import os
 from helpers.config import get_settings, Settings
 
+print("IMPORTING base.py")
+
 base_router = APIRouter(
     prefix="/api/v1",
     tags=["api/v1"],

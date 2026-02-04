@@ -1,3 +1,6 @@
+print("IMPORTING DATACONTROLLERS package")
+
+
 import os
 from .BaseController import BaseController
 from fastapi import UploadFile, File
