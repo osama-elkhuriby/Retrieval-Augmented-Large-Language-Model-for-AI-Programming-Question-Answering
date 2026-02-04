@@ -1,3 +1,4 @@
+import os
 from .BaseController import BaseController
 from fastapi import UploadFile, File
 from models import ResponseSignal
@@ -19,13 +20,20 @@ class DataController(BaseController):
 
     def generate_unique_filename(self, original_file_name: str, project_id: str):
         
-        random_filename = self.get_random_string()
+        random_key = self.get_random_string()
         project_path = ProjectController().get_project_path(project_id=project_id)
         cleaned_file_name = self.get_clean_file_name(original_file_name=original_file_name)
 
-        new_file_path = os.path.join(project_path, f"{random_filename}_{cleaned_file_name}")
+        new_file_path = os.path.join(project_path, f"{random_key}_{cleaned_file_name}")
+        
+        while os.path.exists(new_file_path):
+            random_key = self.get_random_string()
+            new_file_path = os.path.join(project_path, f"{random_key}_{cleaned_file_name}")
 
 
+        return new_file_path
+    
+    
     def get_clean_file_name(self, original_file_name: str):
        cleaned_file_name = re.sub(r'[^\w.]','',original_file_name.strip())
 
