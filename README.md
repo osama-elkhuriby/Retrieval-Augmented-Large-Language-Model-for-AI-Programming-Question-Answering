@@ -13,6 +13,11 @@ $ pip install -r requirements.txt
 ```bash
 $ cp .env.example .env
 ```
+### Run Docker Compose Services
+```bash
+$ cd docker
+$ cp .env.example .env
+```
 
 ### Run FastAPI server
 ```bash
