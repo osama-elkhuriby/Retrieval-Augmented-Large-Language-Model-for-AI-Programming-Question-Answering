@@ -1,10 +1,10 @@
 from pydantic import BaseModel , Field, validator
 from typing import Optional
-from bson.objectid import ObjectId 
+from bson import ObjectId 
 
 
 class Project(BaseModel):
-    _id : Optional[ObjectId]
+    id : Optional[ObjectId] = Field(default=None, alias="_id")
     project_id : str = Field(...,min_length=1)
 
 
