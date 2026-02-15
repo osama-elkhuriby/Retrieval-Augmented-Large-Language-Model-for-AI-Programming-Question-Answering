@@ -2,7 +2,22 @@
 A small-scale AI assistant for answering questions about AI programming (Python, PyTorch, TensorFlow, ML concepts) using Retrieval-Augmented Generation (RAG) over a curated set of technical documents.
 
 
-## Installations
+## Recommended Setup
+
+### Download Miniconda form https://www.anaconda.com/download
+
+### Steps to install WSL:
+
+1. Open PowerShell as Administrator.
+2. Run:
+   ```powershell
+   wsl --install
+
+### Setup the environment
+```bash
+$ conda create --name myenv python=3.11
+$ conda activate myenv
+```
 
 ### Install the required packages
 ```bash
