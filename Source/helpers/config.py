@@ -1,5 +1,4 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from functools import lru_cache
 
 class Settings(BaseSettings):
 
@@ -9,9 +8,7 @@ class Settings(BaseSettings):
 
     FILE_ALLOWED_TYPES: list
     FILE_MAX_SIZE: int
-    FILE_DEFAULT_CHUNK_SIZE: int = 512
-    CHUNK_SIZE: int = 512                  
-    CHUNK_OVERLAP: int = 64 
+    FILE_DEFAULT_CHUNK_SIZE: int
 
     MONGODB_URL: str
     MONGODB_DATABASE: str
@@ -40,6 +37,5 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
 
-@lru_cache()
 def get_settings():
     return Settings()

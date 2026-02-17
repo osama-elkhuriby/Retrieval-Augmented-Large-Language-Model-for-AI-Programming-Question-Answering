@@ -73,8 +73,8 @@ class CoHereProvider(LLMInterface):
             self.logger.error("Embedding model for CoHere was not set")
             return None
         
-        input_type = CoHereEnums.DOCUMENT.value
-        if document_type == DocumentTypeEnum.QUERY.value:
+        input_type = CoHereEnums.DOCUMENT
+        if document_type == DocumentTypeEnum.QUERY:
             input_type = CoHereEnums.QUERY
 
         response = self.client.embed(
@@ -82,7 +82,6 @@ class CoHereProvider(LLMInterface):
             texts = [self.process_text(text)],
             input_type = input_type,
             embedding_types=['float'],
-            output_dimension=self.embedding_size,
         )
 
         if not response or not response.embeddings or not response.embeddings.float:

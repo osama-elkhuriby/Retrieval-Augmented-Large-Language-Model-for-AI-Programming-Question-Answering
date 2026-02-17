@@ -40,21 +40,12 @@ class NLPController(BaseController):
         # step2: manage items
         texts = [ c.chunk_text for c in chunks ]
         metadata = [ c.chunk_metadata for c in  chunks]
-        vectors = []
-        for text in texts:
-            v = self.embedding_client.embed_text(
-                text=text,
-                document_type=DocumentTypeEnum.DOCUMENT.value
-            )
-            print(f"DEBUG embed_text returned: type={type(v)}, len={len(v) if v else 'None'}")  # ← add
-            vectors.append(v)
-        
-        
-        print(f"DEBUG embedding_client type: {type(self.embedding_client)}")  # ← add
-        print(f"DEBUG embedding_client.embedding_model_id: {self.embedding_client.embedding_model_id}")  # ← add
-        print(f"DEBUG embedding_client.embedding_size: {self.embedding_client.embedding_size}")  # ← add
-        
-        
+        vectors = [
+            self.embedding_client.embed_text(text=text, 
+                                             document_type=DocumentTypeEnum.DOCUMENT.value)
+            for text in texts
+        ]
+
         # step3: create collection if not exists
         _ = self.vectordb_client.create_collection(
             collection_name=collection_name,
@@ -122,8 +113,8 @@ class NLPController(BaseController):
             for idx, doc in enumerate(retrieved_documents)
         ])
 
-        footer_prompt = self.template_parser.get("rag", "footer_prompt",{
-            "query": query,
+        footer_prompt = self.template_parser.get("rag", "footer_prompt", {
+            "query": query
         })
 
         # step3: Construct Generation Client Prompts
