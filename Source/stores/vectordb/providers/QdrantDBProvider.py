@@ -1,4 +1,5 @@
 from qdrant_client import models, QdrantClient
+from qdrant_client.models import PointStruct
 from ..VectorDBInterface import VectorDBInterface
 from ..VectorDBEnums import DistanceMethodEnums
 import logging
@@ -22,6 +23,14 @@ class QdrantDBProvider(VectorDBInterface):
 
     def connect(self):
         self.client = QdrantClient(path=self.db_path)
+        default_collection = "collection_2"
+        embedding_size = 1536  # match your embedding size
+        if not self.is_collection_existed(default_collection):
+            self.create_collection(
+            collection_name=default_collection,
+            embedding_size=embedding_size
+            )
+
 
     def disconnect(self):
         self.client = None
@@ -65,7 +74,7 @@ class QdrantDBProvider(VectorDBInterface):
         if not self.is_collection_existed(collection_name):
             self.logger.error(f"Can not insert new record to non-existed collection: {collection_name}")
             return False
-        
+        """
         try:
             _ = self.client.upload_records(
                 collection_name=collection_name,
@@ -82,6 +91,22 @@ class QdrantDBProvider(VectorDBInterface):
         except Exception as e:
             self.logger.error(f"Error while inserting batch: {e}")
             return False
+        """
+        try:
+            point = PointStruct(
+                id=record_id,  # str or int
+                vector=vector,
+                payload={"text": text, "metadata": metadata}
+            )
+            self.client.upsert(
+                collection_name=collection_name,
+                points=[point]
+            )
+            return True
+        except Exception as e:
+            self.logger.error(f"Error while inserting point: {e}")
+            return False
+        
 
         return True
     
@@ -128,6 +153,10 @@ class QdrantDBProvider(VectorDBInterface):
         
     def search_by_vector(self, collection_name: str, vector: list, limit: int = 5):
 
+        if not self.is_collection_existed(collection_name):
+            self.logger.error(f"Collection {collection_name} not found")
+            return []
+    
         results = self.client.search(
             collection_name=collection_name,
             query_vector=vector,
