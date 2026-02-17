@@ -8,4 +8,5 @@ PyMuPDF==1.26.7
 motor==3.7.1
 qdrant-client==1.16.3
 openai==2.2.0
-cohere=5.4.0
+cohere=5.5.8
+
