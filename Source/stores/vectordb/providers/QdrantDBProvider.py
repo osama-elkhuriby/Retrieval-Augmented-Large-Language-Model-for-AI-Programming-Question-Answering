@@ -120,34 +120,23 @@ class QdrantDBProvider(VectorDBInterface):
         
         if metadata is None:
             metadata = [None] * len(texts)
-
         if record_ids is None:
-            record_ids = list(range(0, len(texts)))
+            record_ids = list(range(len(texts)))
 
         for i in range(0, len(texts), batch_size):
             batch_end = i + batch_size
-
-            batch_texts = texts[i:batch_end]
-            batch_vectors = vectors[i:batch_end]
-            batch_metadata = metadata[i:batch_end]
-            batch_record_ids = record_ids[i:batch_end]
-
-            batch_records = [
-                models.Record(
-                    id=batch_record_ids[x],
-                    vector=batch_vectors[x],
-                    payload={
-                        "text": batch_texts[x], "metadata": batch_metadata[x]
-                    }
+            batch_points = [
+                PointStruct(
+                    id=record_ids[i + x],
+                    vector=vectors[i + x],
+                    payload={"text": texts[i + x], "metadata": metadata[i + x]}
                 )
-
-                for x in range(len(batch_texts))
+                for x in range(len(texts[i:batch_end]))
             ]
-
             try:
-                _ = self.client.upload_records(
+                self.client.upsert(
                     collection_name=collection_name,
-                    records=batch_records,
+                    points=batch_points
                 )
             except Exception as e:
                 self.logger.error(f"Error while inserting batch: {e}")
