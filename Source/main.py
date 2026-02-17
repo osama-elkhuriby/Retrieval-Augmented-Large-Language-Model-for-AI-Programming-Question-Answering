@@ -8,10 +8,9 @@ from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
 from stores.llm.templates.template_parser import TemplateParser
 
-@asynccontextmanager 
-
-
+@asynccontextmanager
 async def lifespan(app: FastAPI):
+
     settings = get_settings()
     try:
         app.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URL)
@@ -22,32 +21,34 @@ async def lifespan(app: FastAPI):
 
         # generation client
         app.generation_client = llm_provider_factory.create(provider=settings.GENERATION_BACKEND)
-        app.generation_client.set_generation_model(model_id = settings.GENERATION_MODEL_ID)
+        app.generation_client.set_generation_model(model_id=settings.GENERATION_MODEL_ID)
 
         # embedding client
         app.embedding_client = llm_provider_factory.create(provider=settings.EMBEDDING_BACKEND)
-        app.embedding_client.set_embedding_model(model_id=settings.EMBEDDING_MODEL_ID,
-                                                embedding_size=settings.EMBEDDING_MODEL_SIZE)
-        
-        # vector db client
-        app.vectordb_client = vectordb_provider_factory.create(
-            provider=settings.VECTOR_DB_BACKEND
+        app.embedding_client.set_embedding_model(
+            model_id=settings.EMBEDDING_MODEL_ID,
+            embedding_size=settings.EMBEDDING_MODEL_SIZE
         )
+
+        # vector db client
+        app.vectordb_client = vectordb_provider_factory.create(provider=settings.VECTOR_DB_BACKEND)
         app.vectordb_client.connect()
 
         app.template_parser = TemplateParser(
             language=settings.PRIMARY_LANG,
             default_language=settings.DEFAULT_LANG,
         )
-        print("Application startup completed")
+
+        print(f"✓ EMBEDDING_BACKEND : {settings.EMBEDDING_BACKEND}")
+        print(f"✓ EMBEDDING_MODEL_ID: {settings.EMBEDDING_MODEL_ID}")
+        print(f"✓ EMBEDDING_MODEL_SIZE: {settings.EMBEDDING_MODEL_SIZE}")
+        print("✓ Application startup completed")
+
     except Exception as e:
-        print(f"Error during application startup: {e}")
+        print(f"✗ STARTUP FAILED: {e}")
         sys.exit(1)
 
-
     yield
-
-
 
     app.mongo_conn.close()
     app.vectordb_client.disconnect()
