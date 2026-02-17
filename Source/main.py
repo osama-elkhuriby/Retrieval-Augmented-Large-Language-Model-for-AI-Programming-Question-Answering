@@ -7,6 +7,8 @@ from helpers.config import get_settings
 from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
 from stores.llm.templates.template_parser import TemplateParser
+from stores.llm.providers.OllamaProvider import OllamaProvider
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,13 +25,23 @@ async def lifespan(app: FastAPI):
         app.generation_client = llm_provider_factory.create(provider=settings.GENERATION_BACKEND)
         app.generation_client.set_generation_model(model_id=settings.GENERATION_MODEL_ID)
 
+
+
+        embedding_client = OllamaProvider(
+            embedding_model="nomic-embed-text"
+        )
+        
+
+
+
+        '''
         # embedding client
         app.embedding_client = llm_provider_factory.create(provider=settings.EMBEDDING_BACKEND)
         app.embedding_client.set_embedding_model(
             model_id=settings.EMBEDDING_MODEL_ID,
             embedding_size=settings.EMBEDDING_MODEL_SIZE
         )
-
+        '''
         # vector db client
         app.vectordb_client = vectordb_provider_factory.create(provider=settings.VECTOR_DB_BACKEND)
         app.vectordb_client.connect()
