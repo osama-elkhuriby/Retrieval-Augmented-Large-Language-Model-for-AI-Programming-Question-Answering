@@ -8,11 +8,13 @@ from models.db_schemes import RetrievedDocument
 
 class QdrantDBProvider(VectorDBInterface):
 
-    def __init__(self, db_path: str, distance_method: str):
+    def __init__(self, db_path: str, distance_method: str,embedding_size: int):
+
 
         self.client = None
         self.db_path = db_path
         self.distance_method = None
+        self.embedding_size = embedding_size
 
         if distance_method == DistanceMethodEnums.COSINE.value:
             self.distance_method = models.Distance.COSINE
@@ -23,14 +25,16 @@ class QdrantDBProvider(VectorDBInterface):
 
     def connect(self):
         self.client = QdrantClient(path=self.db_path)
+
+        """
         default_collection = "collection_2"
-        embedding_size = 1536  # match your embedding size
+        embedding_size = self.embedding_size  # match your embedding size
         if not self.is_collection_existed(default_collection):
             self.create_collection(
             collection_name=default_collection,
             embedding_size=embedding_size
             )
-
+        """
 
     def disconnect(self):
         self.client = None
