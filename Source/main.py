@@ -1,27 +1,14 @@
-"""
-this our Rag applicaition for CS-810 course at University of Queen's in Canada. The main.py file is the entry point of our application where we initialize the FastAPI app, set up database connections, and include our route handlers for different endpoints.
-
-Team Members:
-1. Nematalla, Esraa - 20592811
-2. Elkhuribi, Osama - 20596292   
-
-Date: 2026-02-04
-
-"""
 from fastapi import FastAPI
-from routes import base, data
+from routes import base, data, nlp
 from motor.motor_asyncio import AsyncIOMotorClient
 from helpers.config import get_settings
 from stores.llm.LLMProviderFactory import LLMProviderFactory
 from stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
 from stores.llm.templates.template_parser import TemplateParser
 
-
 app = FastAPI()
 
-
-@app.on_event("startup")
-async def startup_db_client():
+async def startup_span():
     settings = get_settings()
     app.mongo_conn = AsyncIOMotorClient(settings.MONGODB_URL)
     app.db_client = app.mongo_conn[settings.MONGODB_DATABASE]
@@ -38,8 +25,7 @@ async def startup_db_client():
     app.embedding_client.set_embedding_model(model_id=settings.EMBEDDING_MODEL_ID,
                                              embedding_size=settings.EMBEDDING_MODEL_SIZE)
     
-
-     # vector db client
+    # vector db client
     app.vectordb_client = vectordb_provider_factory.create(
         provider=settings.VECTOR_DB_BACKEND
     )
@@ -50,16 +36,14 @@ async def startup_db_client():
         default_language=settings.DEFAULT_LANG,
     )
 
-@app.on_event("shutdown")
-async def shutdown_db_client():
+
+async def shutdown_span():
     app.mongo_conn.close()
+    app.vectordb_client.disconnect()
 
-
+app.on_event("startup")(startup_span)
+app.on_event("shutdown")(shutdown_span)
 
 app.include_router(base.base_router)
 app.include_router(data.data_router)
-
-
-
-
-
+app.include_router(nlp.nlp_router)
