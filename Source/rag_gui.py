@@ -283,7 +283,7 @@ hr { border-color: rgba(99,102,241,0.15) !important; }
 # ─────────────────────────────────────────────
 # API HELPERS
 # ─────────────────────────────────────────────
-def api_post(path, json_data=None, files=None, timeout=120):
+def api_post(path, json_data=None, files=None, timeout=None):
     try:
         r = requests.post(f"{API_BASE}{path}", json=json_data, files=files, timeout=timeout)
         return r.json(), r.status_code
