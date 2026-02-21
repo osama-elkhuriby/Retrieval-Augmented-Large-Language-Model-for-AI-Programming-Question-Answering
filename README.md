@@ -24,6 +24,12 @@ $ conda activate myenv
 $ pip install -r requirements.txt
 ```
 
+
+### Ollama
+```bash
+$ irm https://ollama.com/install.ps1 | iex
+```
+
 ### Setup the environments variables
 ```bash
 $ cp .env.example .env
@@ -39,3 +45,4 @@ $ sudo docker compose up -d
 ```bash
 $ uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```
+
