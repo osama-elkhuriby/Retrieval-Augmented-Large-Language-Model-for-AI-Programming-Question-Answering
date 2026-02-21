@@ -1,5 +1,5 @@
 from ..LLMInterface import LLMInterface
-from ..LLMEnums import DocumentTypeEnum
+from ..LLMEnums import DocumentTypeEnum, OpenAIEnums
 import ollama
 import logging
 
@@ -17,10 +17,12 @@ class OllamaProvider(LLMInterface):
         self.embedding_model = embedding_model
         self.embedding_size = embedding_size
         self.generation_model = generation_model
+        
         self.default_input_max_characters = default_input_max_characters
         self.default_generation_max_output_tokens = default_generation_max_output_tokens
         self.default_generation_temperature = default_generation_temperature
 
+        self.enums = OpenAIEnums
         self.logger = logging.getLogger(__name__)
 
     # -------------------------
