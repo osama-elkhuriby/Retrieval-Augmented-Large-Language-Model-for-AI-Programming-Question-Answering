@@ -44,10 +44,10 @@ async def lifespan(app: FastAPI):
             default_language=settings.DEFAULT_LANG,
         )
 
-        print(f"✓ EMBEDDING_BACKEND : {settings.EMBEDDING_BACKEND}")
-        print(f"✓ EMBEDDING_MODEL_ID: {settings.EMBEDDING_MODEL_ID}")
-        print(f"✓ EMBEDDING_MODEL_SIZE: {settings.EMBEDDING_MODEL_SIZE}")
-        print("✓ Application startup completed")
+        print(f"EMBEDDING_BACKEND : {settings.EMBEDDING_BACKEND}")
+        print(f"EMBEDDING_MODEL_ID: {settings.EMBEDDING_MODEL_ID}")
+        print(f"EMBEDDING_MODEL_SIZE: {settings.EMBEDDING_MODEL_SIZE}")
+        print("Application startup completed")
 
     except Exception as e:
         print(f"✗ STARTUP FAILED: {e}")

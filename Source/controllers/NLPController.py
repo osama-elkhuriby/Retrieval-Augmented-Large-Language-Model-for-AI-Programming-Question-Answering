@@ -25,7 +25,10 @@ class NLPController(BaseController):
     def get_vector_db_collection_info(self, project: Project):
         collection_name = self.create_collection_name(project_id=project.project_id)
         collection_info = self.vectordb_client.get_collection_info(collection_name=collection_name)
-
+        
+        if collection_info is None:
+            return None
+        
         return json.loads(
             json.dumps(collection_info, default=lambda x: x.__dict__)
         )

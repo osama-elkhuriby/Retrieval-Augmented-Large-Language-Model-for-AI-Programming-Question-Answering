@@ -1,595 +1,550 @@
 import streamlit as st
 import requests
-import json
+import time
 
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-API_BASE = "http://localhost:8000/api/v1"
+API_BASE    = "http://localhost:5000/api/v1"
+PROJECT_ID  = "csai810"   # fixed project, no user input needed
 
 st.set_page_config(
-    page_title="RAG Studio",
-    page_icon="⬡",
-    layout="wide",
-    initial_sidebar_state="expanded",
+    page_title="AI Docs Assistant",
+    page_icon="🤖",
+    layout="centered",
+    initial_sidebar_state="collapsed",
 )
 
 # ─────────────────────────────────────────────
-# CUSTOM CSS
+# CSS
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
-/* Reset & base */
-html, body, [class*="css"] {
-    font-family: 'DM Mono', monospace;
-}
+*, *::before, *::after { box-sizing: border-box; }
+html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 
-/* App background */
+/* ── Background ── */
 .stApp {
-    background: #0a0a0f;
-    color: #e8e4d9;
+    background: linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+    min-height: 100vh;
 }
 
-/* Sidebar */
-[data-testid="stSidebar"] {
-    background: #0f0f18 !important;
-    border-right: 1px solid #1e1e2e;
+/* ── All text visible ── */
+h1,h2,h3,h4,h5,h6,p,span,label,div,li,td,th,caption {
+    color: #f1f5f9 !important;
 }
-[data-testid="stSidebar"] * {
-    color: #e8e4d9 !important;
-}
+.stMarkdown p { color: #cbd5e1 !important; }
 
-/* Header */
-.rag-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 2rem 0 1rem;
-    border-bottom: 1px solid #1e1e2e;
-    margin-bottom: 2rem;
+/* ── Hero ── */
+.hero {
+    text-align: center;
+    padding: 2.5rem 1rem 1.5rem;
 }
-.rag-logo {
-    font-family: 'Syne', sans-serif;
-    font-size: 2.4rem;
-    font-weight: 800;
-    color: #c8f542;
-    letter-spacing: -2px;
-    line-height: 1;
-}
-.rag-sub {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: #555570;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-top: 4px;
-}
-
-/* Cards */
-.metric-card {
-    background: #0f0f18;
-    border: 1px solid #1e1e2e;
-    border-radius: 12px;
-    padding: 1.4rem;
-    transition: border-color 0.2s;
-}
-.metric-card:hover { border-color: #c8f542; }
-.metric-label {
-    font-size: 0.65rem;
-    color: #555570;
+.hero-badge {
+    display: inline-block;
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.4);
+    color: #a5b4fc !important;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.72rem;
+    font-weight: 600;
     letter-spacing: 2px;
     text-transform: uppercase;
-    margin-bottom: 6px;
-}
-.metric-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #c8f542;
-}
-
-/* Buttons */
-.stButton > button {
-    background: #c8f542 !important;
-    color: #0a0a0f !important;
-    border: none !important;
-    border-radius: 8px !important;
-    font-family: 'DM Mono', monospace !important;
-    font-weight: 500 !important;
-    font-size: 0.8rem !important;
-    letter-spacing: 1px !important;
-    padding: 0.6rem 1.4rem !important;
-    transition: all 0.2s !important;
-}
-.stButton > button:hover {
-    background: #d9ff5a !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(200, 245, 66, 0.3) !important;
-}
-
-/* Inputs */
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea,
-.stNumberInput > div > div > input {
-    background: #0f0f18 !important;
-    border: 1px solid #1e1e2e !important;
-    border-radius: 8px !important;
-    color: #e8e4d9 !important;
-    font-family: 'DM Mono', monospace !important;
-    font-size: 0.85rem !important;
-}
-.stTextInput > div > div > input:focus,
-.stTextArea > div > div > textarea:focus {
-    border-color: #c8f542 !important;
-    box-shadow: 0 0 0 2px rgba(200, 245, 66, 0.15) !important;
-}
-
-/* Select */
-.stSelectbox > div > div {
-    background: #0f0f18 !important;
-    border: 1px solid #1e1e2e !important;
-    border-radius: 8px !important;
-    color: #e8e4d9 !important;
-}
-
-/* File uploader */
-[data-testid="stFileUploader"] {
-    background: #0f0f18;
-    border: 1px dashed #2a2a3e;
-    border-radius: 12px;
-    padding: 1rem;
-}
-[data-testid="stFileUploader"]:hover {
-    border-color: #c8f542;
-}
-
-/* Answer box */
-.answer-box {
-    background: #0f0f18;
-    border: 1px solid #c8f542;
-    border-left: 4px solid #c8f542;
-    border-radius: 12px;
-    padding: 1.4rem 1.6rem;
-    font-size: 0.9rem;
-    line-height: 1.8;
-    color: #e8e4d9;
-    margin-top: 1rem;
-}
-
-/* Search result card */
-.result-card {
-    background: #0f0f18;
-    border: 1px solid #1e1e2e;
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    margin-bottom: 0.8rem;
-    font-size: 0.82rem;
-    line-height: 1.7;
-    color: #b0acb0;
-    transition: border-color 0.2s;
-}
-.result-card:hover { border-color: #333350; }
-.result-score {
-    font-family: 'Syne', sans-serif;
-    font-size: 0.7rem;
-    color: #c8f542;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
-}
-
-/* Section titles */
-.section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #e8e4d9;
-    letter-spacing: -0.5px;
     margin-bottom: 1rem;
 }
-
-/* Status pills */
-.pill-success {
-    display: inline-block;
-    background: rgba(200,245,66,0.12);
-    color: #c8f542;
-    border: 1px solid rgba(200,245,66,0.3);
-    border-radius: 20px;
-    padding: 2px 12px;
-    font-size: 0.7rem;
-    letter-spacing: 1px;
+.hero-title {
+    font-size: 2.1rem;
+    font-weight: 800;
+    color: #f8fafc !important;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
 }
-.pill-error {
-    display: inline-block;
-    background: rgba(255,80,80,0.1);
-    color: #ff6060;
-    border: 1px solid rgba(255,80,80,0.3);
-    border-radius: 20px;
-    padding: 2px 12px;
-    font-size: 0.7rem;
-    letter-spacing: 1px;
+.hero-title span { color: #818cf8 !important; }
+.hero-sub {
+    font-size: 0.92rem;
+    color: #94a3b8 !important;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
 }
 
-/* Divider */
-hr { border-color: #1e1e2e !important; }
+/* ── Status pill ── */
+.status-online  { color: #4ade80 !important; font-size:0.78rem; font-weight:700; }
+.status-offline { color: #f87171 !important; font-size:0.78rem; font-weight:700; }
 
-/* Tabs */
+/* ── Cards ── */
+.card {
+    background: rgba(30,41,59,0.8);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 16px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1.2rem;
+    backdrop-filter: blur(10px);
+}
+.card-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #818cf8 !important;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 0.8rem;
+}
+
+/* ── Tabs ── */
 .stTabs [data-baseweb="tab-list"] {
-    background: transparent !important;
-    border-bottom: 1px solid #1e1e2e;
-    gap: 0;
+    background: rgba(15,23,42,0.6);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+    border: 1px solid rgba(99,102,241,0.15);
+    margin-bottom: 1.5rem;
 }
 .stTabs [data-baseweb="tab"] {
+    border-radius: 9px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    color: #64748b !important;
+    padding: 0.5rem 1.2rem !important;
     background: transparent !important;
-    color: #555570 !important;
-    font-family: 'DM Mono', monospace !important;
-    font-size: 0.75rem !important;
-    letter-spacing: 1px !important;
     border: none !important;
-    padding: 0.6rem 1.2rem !important;
+    transition: all 0.2s !important;
 }
 .stTabs [aria-selected="true"] {
-    color: #c8f542 !important;
-    border-bottom: 2px solid #c8f542 !important;
+    background: rgba(99,102,241,0.25) !important;
+    color: #a5b4fc !important;
+    border: 1px solid rgba(99,102,241,0.35) !important;
 }
 
-/* Expander */
-.streamlit-expanderHeader {
-    background: #0f0f18 !important;
-    border: 1px solid #1e1e2e !important;
-    border-radius: 8px !important;
-    color: #e8e4d9 !important;
-    font-family: 'DM Mono', monospace !important;
-    font-size: 0.8rem !important;
+/* ── Inputs ── */
+.stTextInput input, .stTextArea textarea {
+    background: rgba(15,23,42,0.8) !important;
+    color: #f1f5f9 !important;
+    border: 1.5px solid rgba(99,102,241,0.3) !important;
+    border-radius: 10px !important;
+    font-size: 0.92rem !important;
+    caret-color: #818cf8;
 }
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #0a0a0f; }
-::-webkit-scrollbar-thumb { background: #2a2a3e; border-radius: 4px; }
-
-/* Labels */
-label, .stSlider label {
-    color: #888898 !important;
-    font-size: 0.75rem !important;
-    letter-spacing: 0.5px !important;
+.stTextInput input::placeholder, .stTextArea textarea::placeholder {
+    color: #475569 !important;
 }
-
-/* Radio */
-.stRadio > div { gap: 8px; }
-.stRadio [data-testid="stMarkdownContainer"] p {
-    color: #e8e4d9 !important;
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
+}
+.stTextInput label, .stTextArea label {
+    color: #94a3b8 !important;
     font-size: 0.82rem !important;
+    font-weight: 600 !important;
 }
 
-/* Slider */
-.stSlider [data-testid="stThumbValue"] { color: #c8f542 !important; }
-.stSlider [data-baseweb="slider"] div[role="slider"] { background: #c8f542 !important; }
+/* ── File uploader ── */
+[data-testid="stFileUploader"] {
+    background: rgba(15,23,42,0.6) !important;
+    border: 2px dashed rgba(99,102,241,0.35) !important;
+    border-radius: 12px !important;
+}
+[data-testid="stFileUploader"] * { color: #94a3b8 !important; }
+[data-testid="stFileUploader"] small { color: #64748b !important; }
 
-/* Success / error messages */
-.stSuccess { background: rgba(200,245,66,0.08) !important; border-color: rgba(200,245,66,0.3) !important; color: #c8f542 !important; }
-.stError   { background: rgba(255,80,80,0.08) !important; border-color: rgba(255,80,80,0.3) !important; color: #ff6060 !important; }
-.stWarning { background: rgba(255,180,50,0.08) !important; border-color: rgba(255,180,50,0.3) !important; color: #ffb432 !important; }
-.stInfo    { background: rgba(100,160,255,0.08) !important; border-color: rgba(100,160,255,0.3) !important; color: #64a0ff !important; }
+/* ── Buttons ── */
+.stButton > button {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
+    padding: 0.55rem 1.5rem !important;
+    width: 100% !important;
+    transition: all 0.2s !important;
+    box-shadow: 0 4px 15px rgba(99,102,241,0.3) !important;
+}
+.stButton > button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(99,102,241,0.45) !important;
+}
+
+/* ── Slider ── */
+.stSlider label { color: #94a3b8 !important; font-size:0.82rem !important; font-weight:600 !important; }
+[data-testid="stSlider"] [role="slider"] { background: #6366f1 !important; }
+
+/* ── Checkbox ── */
+[data-testid="stCheckbox"] p { color: #94a3b8 !important; font-size:0.85rem !important; }
+
+/* ── Answer box ── */
+.answer-box {
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-left: 4px solid #6366f1;
+    border-radius: 12px;
+    padding: 1.3rem 1.5rem;
+    font-size: 0.95rem;
+    line-height: 1.9;
+    color: #e2e8f0 !important;
+    margin-top: 0.8rem;
+}
+
+/* ── Result card ── */
+.result-card {
+    background: rgba(15,23,42,0.7);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 0.7rem;
+    font-size: 0.87rem;
+    line-height: 1.75;
+    color: #cbd5e1 !important;
+}
+.result-num {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #818cf8 !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+}
+
+/* ── Alerts ── */
+.stSuccess > div { background: rgba(74,222,128,0.1) !important; border-color: rgba(74,222,128,0.3) !important; }
+.stSuccess p     { color: #4ade80 !important; }
+.stError > div   { background: rgba(248,113,113,0.1) !important; border-color: rgba(248,113,113,0.3) !important; }
+.stError p       { color: #f87171 !important; }
+.stWarning > div { background: rgba(251,191,36,0.1) !important; border-color: rgba(251,191,36,0.3) !important; }
+.stWarning p     { color: #fbbf24 !important; }
+.stInfo > div    { background: rgba(99,102,241,0.1) !important; border-color: rgba(99,102,241,0.3) !important; }
+.stInfo p        { color: #a5b4fc !important; }
+
+/* ── Caption ── */
+.stCaption p, [data-testid="stCaptionContainer"] p { color: #64748b !important; font-size:0.8rem !important; }
+
+/* ── Expander ── */
+details { background: rgba(15,23,42,0.5) !important; border: 1px solid rgba(99,102,241,0.2) !important; border-radius: 10px !important; }
+summary p { color: #94a3b8 !important; font-weight: 600 !important; }
+
+/* ── Code block ── */
+.stCodeBlock { background: rgba(0,0,0,0.4) !important; border-radius: 10px !important; }
+
+/* ── Divider ── */
+hr { border-color: rgba(99,102,241,0.15) !important; }
+
+/* ── Chip row ── */
+.chip {
+    display: inline-block;
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.25);
+    color: #a5b4fc !important;
+    border-radius: 20px;
+    padding: 3px 11px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin: 2px;
+}
+
+/* ── Footer ── */
+.footer {
+    text-align: center;
+    margin-top: 3rem;
+    padding: 1.5rem 0 1rem;
+    border-top: 1px solid rgba(99,102,241,0.15);
+}
+.footer-project { font-size: 0.78rem; font-weight: 700; color: #818cf8 !important; letter-spacing: 1px; }
+.footer-names   { font-size: 0.85rem; color: #94a3b8 !important; margin-top: 4px; }
+.footer-tech    { font-size: 0.72rem; color: #475569 !important; margin-top: 6px; }
+
+/* ── Step badge ── */
+.step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px; height: 26px;
+    background: rgba(99,102,241,0.2);
+    border: 1px solid rgba(99,102,241,0.4);
+    color: #a5b4fc !important;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 8px;
+}
+.step-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #e2e8f0 !important;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.6rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────
-# HELPERS
+# API HELPERS
 # ─────────────────────────────────────────────
-def api_get(path):
-    try:
-        r = requests.get(f"{API_BASE}{path}", timeout=30)
-        return r.json(), r.status_code
-    except Exception as e:
-        return {"error": str(e)}, 0
-
 def api_post(path, json_data=None, files=None, timeout=120):
     try:
         r = requests.post(f"{API_BASE}{path}", json=json_data, files=files, timeout=timeout)
         return r.json(), r.status_code
+    except requests.exceptions.ConnectionError:
+        return {"error": "Cannot reach the server. Is the backend running on port 5000?"}, 0
+    except requests.exceptions.Timeout:
+        return {"error": "Request timed out. Please try again."}, 0
     except Exception as e:
         return {"error": str(e)}, 0
 
-def status_pill(ok, label_ok="SUCCESS", label_fail="FAILED"):
-    if ok:
-        return f'<span class="pill-success">✓ {label_ok}</span>'
-    return f'<span class="pill-error">✗ {label_fail}</span>'
+def api_get(path, timeout=15):
+    try:
+        r = requests.get(f"{API_BASE}{path}", timeout=timeout)
+        return r.json(), r.status_code
+    except requests.exceptions.ConnectionError:
+        return {"error": "Cannot reach the server."}, 0
+    except Exception as e:
+        return {"error": str(e)}, 0
+
+def is_online():
+    try:
+        requests.get(API_BASE.replace("/api/v1", ""), timeout=3)
+        return True
+    except:
+        return False
 
 
 # ─────────────────────────────────────────────
-# SIDEBAR
+# HERO HEADER
 # ─────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("""
-    <div style="padding: 1.5rem 0 1rem;">
-        <div style="font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:#c8f542;letter-spacing:-1px;">⬡ RAG Studio</div>
-        <div style="font-size:0.6rem;color:#555570;letter-spacing:3px;margin-top:4px;">POWERED BY OLLAMA</div>
-    </div>
-    """, unsafe_allow_html=True)
+online = is_online()
+status_html = (
+    '<span class="status-online">● Connected</span>'
+    if online else
+    '<span class="status-offline">● Backend Offline</span>'
+)
 
-    st.markdown("---")
-
-    st.markdown('<div style="font-size:0.65rem;color:#555570;letter-spacing:2px;margin-bottom:8px;">PROJECT</div>', unsafe_allow_html=True)
-    project_id = st.text_input("Project ID", value="project_1", label_visibility="collapsed", placeholder="Enter project ID...")
-
-    st.markdown("---")
-    st.markdown('<div style="font-size:0.65rem;color:#555570;letter-spacing:2px;margin-bottom:8px;">API ENDPOINT</div>', unsafe_allow_html=True)
-    api_url = st.text_input("API URL", value=API_BASE, label_visibility="collapsed")
-
-    st.markdown("---")
-
-    # Quick health check
-    if st.button("⬡  CHECK API HEALTH"):
-        try:
-            r = requests.get(api_url.replace("/api/v1", ""), timeout=5)
-            st.markdown('<span class="pill-success">API ONLINE</span>', unsafe_allow_html=True)
-        except:
-            st.markdown('<span class="pill-error">API OFFLINE</span>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div style="position:fixed;bottom:1.5rem;left:1rem;right:1rem;font-size:0.6rem;color:#333350;letter-spacing:1px;">
-        RAG STUDIO v0.1 · OLLAMA BACKEND
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# ─────────────────────────────────────────────
-# HEADER
-# ─────────────────────────────────────────────
 st.markdown(f"""
-<div class="rag-header">
-    <div>
-        <div class="rag-logo">⬡ RAG Studio</div>
-        <div class="rag-sub">Retrieval Augmented Generation · Project: {project_id}</div>
+<div class="hero">
+    <div class="hero-badge">RAG · AI Programming Assistant</div>
+    <div class="hero-title">Ask anything about<br><span>AI & Programming</span></div>
+    <div class="hero-sub">
+        Powered by your own documents — Python, PyTorch, TensorFlow, ML concepts and more.
     </div>
+    <div style="margin-top:1rem">{status_html}</div>
 </div>
 """, unsafe_allow_html=True)
 
+# Topics chips
+st.markdown("""
+<div style="text-align:center;margin-bottom:1.5rem;">
+    <span class="chip">🐍 Python</span>
+    <span class="chip">🔥 PyTorch</span>
+    <span class="chip">📐 TensorFlow</span>
+    <span class="chip">🧠 ML Concepts</span>
+    <span class="chip">📚 RAG</span>
+</div>
+""", unsafe_allow_html=True)
+
+if not online:
+    st.error("⚠️ Backend is not running. Start it with:\n```bash\nuvicorn main:app --host 0.0.0.0 --port 5000 --reload\n```")
+    st.stop()
 
 # ─────────────────────────────────────────────
 # TABS
 # ─────────────────────────────────────────────
-tab1, tab2, tab3, tab4 = st.tabs([
-    "  ▲  UPLOAD & INDEX  ",
-    "  ◈  ASK AI  ",
-    "  ◎  SEARCH  ",
-    "  ⬡  PROJECT INFO  ",
-])
+tab1, tab2, tab3 = st.tabs(["💬  Ask AI", "📁  Add Documents", "🔎  Search"])
 
 
-# ══════════════════════════════════════════════
-# TAB 1 — UPLOAD & INDEX
-# ══════════════════════════════════════════════
+# ════════════════════════════════════════════
+# TAB 1 — ASK AI  (default / main tab)
+# ════════════════════════════════════════════
 with tab1:
-    col_upload, col_process = st.columns([1, 1], gap="large")
+    st.markdown("""
+    <div class="step-title">
+        Ask a question about AI & Programming
+    </div>
+    <p style="color:#64748b;font-size:0.83rem;margin-bottom:1rem;">
+        The assistant searches through indexed documents and generates a grounded answer.
+    </p>
+    """, unsafe_allow_html=True)
 
-    # ── Upload ──
-    with col_upload:
-        st.markdown('<div class="section-title">Upload Documents</div>', unsafe_allow_html=True)
-
-        uploaded_file = st.file_uploader(
-            "Drop your file here",
-            type=["pdf", "txt", "md", "csv"],
-            label_visibility="collapsed"
-        )
-
-        if uploaded_file:
-            st.markdown(f"""
-            <div style="background:#0f0f18;border:1px solid #1e1e2e;border-radius:8px;padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.8rem;">
-                <span style="color:#555570;">FILE</span>&nbsp;&nbsp;
-                <span style="color:#e8e4d9;">{uploaded_file.name}</span>&nbsp;&nbsp;
-                <span style="color:#c8f542;">{uploaded_file.size / 1024:.1f} KB</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-            if st.button("⬆  UPLOAD FILE"):
-                with st.spinner("Uploading..."):
-                    files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
-                    resp, code = api_post(f"/data/upload/{project_id}", files=files)
-
-                if code == 200:
-                    file_id = resp.get("file_id", "")
-                    st.success(f"Uploaded! File ID: `{file_id}`")
-                    st.session_state["last_file_id"] = file_id
-                else:
-                    st.error(f"Upload failed: {resp.get('signal', resp)}")
-
-    # ── Process ──
-    with col_process:
-        st.markdown('<div class="section-title">Process & Index</div>', unsafe_allow_html=True)
-
-        chunk_size   = st.slider("Chunk Size (tokens)", 64, 1024, 512, 64)
-        overlap_size = st.slider("Overlap Size (tokens)", 0, 256, 64, 16)
-
-        file_id_input = st.text_input(
-            "File ID (leave blank for all files)",
-            value=st.session_state.get("last_file_id", ""),
-            placeholder="Optional — processes all project files if empty"
-        )
-
-        do_reset_proc = st.checkbox("Reset existing chunks before processing")
-
-        if st.button("⚙  PROCESS FILES"):
-            with st.spinner("Processing and chunking..."):
-                payload = {
-                    "chunk_size": chunk_size,
-                    "overlap_size": overlap_size,
-                    "do_reset": 1 if do_reset_proc else 0,
-                }
-                if file_id_input.strip():
-                    payload["file_id"] = file_id_input.strip()
-
-                resp, code = api_post(f"/data/process/{project_id}", json_data=payload)
-
-            if code == 200:
-                st.success(f"✓ {resp.get('inserted_chunks', 0)} chunks from {resp.get('processed_files', 0)} file(s)")
-            else:
-                st.error(f"Processing failed: {resp.get('signal', resp)}")
-
-    st.markdown("---")
-
-    # ── Index to Vector DB ──
-    st.markdown('<div class="section-title">Push to Vector DB</div>', unsafe_allow_html=True)
-
-    col_a, col_b = st.columns([2, 1])
-    with col_a:
-        do_reset_idx = st.checkbox("Reset vector collection before indexing")
-    with col_b:
-        push_btn = st.button("⬡  INDEX INTO VECTOR DB", use_container_width=True)
-
-    if push_btn:
-        with st.spinner("Embedding and indexing — this may take a moment..."):
-            resp, code = api_post(
-                f"/nlp/index/push/{project_id}",
-                json_data={"do_reset": 1 if do_reset_idx else 0}
-            )
-
-        if code == 200:
-            st.success(f"✓ {resp.get('inserted_items_count', 0)} chunks indexed into vector DB")
-        else:
-            st.error(f"Indexing failed: {resp.get('signal', resp)}")
-
-
-# ══════════════════════════════════════════════
-# TAB 2 — ASK AI (RAG)
-# ══════════════════════════════════════════════
-with tab2:
-    st.markdown('<div class="section-title">Ask your documents anything</div>', unsafe_allow_html=True)
-
-    query_text = st.text_area(
-        "Your question",
-        placeholder="What does the document say about...?",
-        height=100,
+    question = st.text_area(
+        "question",
+        placeholder="e.g. How do I define a custom dataset in PyTorch?",
+        height=110,
         label_visibility="collapsed"
     )
+    chunks = st.slider("Context chunks to retrieve", 1, 15, 5)
 
-    col_l, col_r = st.columns([1, 2])
-    with col_l:
-        rag_limit = st.slider("Retrieved context chunks", 1, 20, 5)
-    with col_r:
-        pass
-
-    ask_btn = st.button("◈  GET AI ANSWER", use_container_width=False)
-
-    if ask_btn:
-        if not query_text.strip():
-            st.warning("Please enter a question.")
+    if st.button("🤖  Get Answer"):
+        if not question.strip():
+            st.warning("Please type a question first.")
         else:
-            with st.spinner("Thinking..."):
+            with st.spinner("Searching documents and generating answer..."):
                 resp, code = api_post(
-                    f"/nlp/index/answer/{project_id}",
-                    json_data={"text": query_text, "limit": rag_limit}
+                    f"/nlp/index/answer/{PROJECT_ID}",
+                    json_data={"text": question, "limit": chunks}
                 )
-
             if code == 200:
-                answer = resp.get("answer", "")
-                st.markdown(f'<div class="answer-box">{answer}</div>', unsafe_allow_html=True)
-
-                with st.expander("▸  View full prompt sent to LLM"):
+                answer = resp.get("answer", "No answer returned.")
+                st.markdown(f'<div class="answer-box">🤖 {answer}</div>', unsafe_allow_html=True)
+                with st.expander("📄 View retrieved context"):
                     st.code(resp.get("full_prompt", ""), language="markdown")
-
-                with st.expander("▸  View chat history"):
-                    st.json(resp.get("chat_history", []))
             else:
-                st.error(f"Error: {resp.get('signal', resp)}")
+                st.error(resp.get("error") or resp.get("signal") or "Something went wrong")
 
-    # ── Example prompts ──
-    st.markdown("---")
-    st.markdown('<div style="font-size:0.65rem;color:#555570;letter-spacing:2px;margin-bottom:10px;">EXAMPLE PROMPTS</div>', unsafe_allow_html=True)
+    # Example questions
+    st.divider()
+    st.markdown('<p style="color:#475569;font-size:0.78rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;">Try an example</p>', unsafe_allow_html=True)
     examples = [
-        "Summarize the main topics covered in the documents.",
-        "What are the key conclusions or findings?",
-        "List any important dates or deadlines mentioned.",
-        "What recommendations are made in the document?",
+        "How do I define a custom Dataset in PyTorch?",
+        "What is the difference between a CNN and RNN?",
+        "How do I use TensorFlow to build a simple neural network?",
+        "What is backpropagation and how does it work?",
     ]
-    cols = st.columns(2)
+    c1, c2 = st.columns(2)
     for i, ex in enumerate(examples):
-        with cols[i % 2]:
-            if st.button(f"› {ex}", key=f"ex_{i}", use_container_width=True):
-                st.session_state["prefill_query"] = ex
-                st.rerun()
-
-    if "prefill_query" in st.session_state:
-        st.info(f'Prefilled: "{st.session_state.pop("prefill_query")}" — paste it above and ask!')
+        with (c1 if i % 2 == 0 else c2):
+            if st.button(f"› {ex}", key=f"ex{i}", use_container_width=True):
+                st.info(f'📋 Copy into the box above:\n**"{ex}"**')
 
 
-# ══════════════════════════════════════════════
-# TAB 3 — SEMANTIC SEARCH
-# ══════════════════════════════════════════════
+# ════════════════════════════════════════════
+# TAB 2 — ADD DOCUMENTS
+# ════════════════════════════════════════════
+with tab2:
+    st.markdown("""
+    <div class="step-title">Add new documents to the knowledge base</div>
+    <p style="color:#64748b;font-size:0.83rem;margin-bottom:1.2rem;">
+        Upload a PDF or text file, then index it so the AI can answer questions from it.
+    </p>
+    """, unsafe_allow_html=True)
+
+    # ── Step 1: Upload ──
+    st.markdown('<div class="step-title"><span class="step-badge">1</span> Upload a document</div>', unsafe_allow_html=True)
+    uploaded = st.file_uploader("file", type=["pdf", "txt", "md"], label_visibility="collapsed")
+
+    asset_name = None  # will hold the asset_name (file_id) returned from upload
+
+    if uploaded:
+        st.caption(f"📄 {uploaded.name} · {uploaded.size / 1024:.1f} KB")
+        if st.button("⬆️  Upload", key="upload"):
+            with st.spinner("Uploading..."):
+                files = {"file": (uploaded.name, uploaded.getvalue(), uploaded.type)}
+                resp, code = api_post(f"/data/upload/{PROJECT_ID}", files=files)
+            if code == 200:
+                # upload returns file_id = asset_name (UUID filename) stored in DB
+                # process route uses asset_name to look up the record via get_asset_record()
+                asset_name = resp.get("file_id", "")
+                st.success(f"✅ Uploaded successfully!")
+                st.session_state["uploaded_asset_name"] = asset_name
+                st.session_state["upload_done"] = True
+            else:
+                st.error(resp.get("error") or resp.get("signal") or "Upload failed")
+
+    st.divider()
+
+    # ── Step 2: Process ──
+    st.markdown('<div class="step-title"><span class="step-badge">2</span> Process into chunks</div>', unsafe_allow_html=True)
+    st.caption("Splits the document into pieces the AI can read and index")
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        chunk_size = st.slider("Chunk size", 64, 1024, 512, 64)
+    with col_b:
+        overlap = st.slider("Overlap", 0, 256, 64, 16)
+
+    # asset_name is what the process route expects — it matches asset_name in MongoDB
+    stored_asset_name = st.session_state.get("uploaded_asset_name", "")
+    if stored_asset_name:
+        st.caption(f"📄 Ready to process: `{stored_asset_name}`")
+    else:
+        st.caption("Upload a file first, or leave blank to process all files in the project")
+    reset_chunks = st.checkbox("Reset chunks before processing")
+
+    if st.button("⚙️  Process", key="process"):
+        with st.spinner("Processing..."):
+            payload = {
+                "chunk_size": chunk_size,
+                "overlap_size": overlap,
+                "do_reset": 1 if reset_chunks else 0,
+            }
+            # send asset_name as file_id — the route calls get_asset_record(asset_name=file_id)
+            if stored_asset_name:
+                payload["file_id"] = stored_asset_name
+            resp, code = api_post(f"/data/process/{PROJECT_ID}", json_data=payload)
+        if code == 200:
+            st.success(f"✅ {resp.get('inserted_chunks', 0)} chunks from {resp.get('processed_files', 0)} file(s)")
+            st.session_state["process_done"] = True
+        else:
+            st.error(resp.get("error") or resp.get("signal") or "Processing failed")
+
+    st.divider()
+
+    # ── Step 3: Index ──
+    st.markdown('<div class="step-title"><span class="step-badge">3</span> Index into Vector Database</div>', unsafe_allow_html=True)
+    st.caption("Embeds the chunks using Ollama and stores them in Qdrant for semantic search")
+    reset_idx = st.checkbox("Reset vector DB before indexing")
+
+    if st.button("🚀  Index Now", key="index"):
+        with st.spinner("Embedding and indexing — this may take a moment..."):
+            resp, code = api_post(
+                f"/nlp/index/push/{PROJECT_ID}",
+                json_data={"do_reset": 1 if reset_idx else 0}
+            )
+        if code == 200:
+            st.success(f"✅ {resp.get('inserted_items_count', 0)} chunks indexed! You can now ask questions.")
+            st.session_state.pop("uploaded_asset_name", None)
+            st.session_state.pop("upload_done", None)
+            st.session_state.pop("process_done", None)
+        else:
+            st.error(resp.get("error") or resp.get("signal") or "Indexing failed")
+
+
+# ════════════════════════════════════════════
+# TAB 3 — SEARCH
+# ════════════════════════════════════════════
 with tab3:
-    st.markdown('<div class="section-title">Semantic Search</div>', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.75rem;color:#555570;margin-bottom:1.2rem;">Search the vector DB directly — returns raw matched chunks without LLM generation.</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="step-title">Semantic Search</div>
+    <p style="color:#64748b;font-size:0.83rem;margin-bottom:1.2rem;">
+        Find relevant document chunks directly without AI generation.
+    </p>
+    """, unsafe_allow_html=True)
 
-    search_text  = st.text_input("Search query", placeholder="Enter a concept, keyword, or sentence...", label_visibility="collapsed")
-    search_limit = st.slider("Number of results", 1, 20, 5)
+    query = st.text_input("search", placeholder="e.g. gradient descent learning rate...", label_visibility="collapsed")
+    limit = st.slider("Results", 1, 20, 5)
 
-    search_btn = st.button("◎  SEARCH VECTOR DB")
-
-    if search_btn:
-        if not search_text.strip():
-            st.warning("Please enter a search query.")
+    if st.button("🔎  Search", key="search"):
+        if not query.strip():
+            st.warning("Please enter a search term.")
         else:
             with st.spinner("Searching..."):
                 resp, code = api_post(
-                    f"/nlp/index/search/{project_id}",
-                    json_data={"text": search_text, "limit": search_limit}
+                    f"/nlp/index/search/{PROJECT_ID}",
+                    json_data={"text": query, "limit": limit}
                 )
-
             if code == 200:
                 results = resp.get("results", [])
-                st.markdown(f'<div style="font-size:0.7rem;color:#555570;margin-bottom:1rem;">Found <span style="color:#c8f542">{len(results)}</span> results</div>', unsafe_allow_html=True)
-
+                st.caption(f"Found **{len(results)}** result(s)")
                 for i, r in enumerate(results):
-                    score = r.get("score", r.get("similarity", "—"))
-                    text  = r.get("text", r.get("chunk_text", str(r)))
+                    score     = r.get("score", r.get("similarity", "—"))
+                    text      = r.get("text", r.get("chunk_text", str(r)))
+                    score_str = f"{score:.4f}" if isinstance(score, float) else str(score)
                     st.markdown(f"""
                     <div class="result-card">
-                        <div class="result-score">CHUNK {i+1} &nbsp;·&nbsp; SCORE: {score if isinstance(score, str) else f"{score:.4f}"}</div>
+                        <div class="result-num">Result {i+1} · Score: {score_str}</div>
                         {text}
-                    </div>
-                    """, unsafe_allow_html=True)
+                    </div>""", unsafe_allow_html=True)
             else:
-                st.error(f"Search failed: {resp.get('signal', resp)}")
+                st.error(resp.get("error") or resp.get("signal") or "Search failed")
 
 
-# ══════════════════════════════════════════════
-# TAB 4 — PROJECT INFO
-# ══════════════════════════════════════════════
-with tab4:
-    st.markdown('<div class="section-title">Project Overview</div>', unsafe_allow_html=True)
-
-    col_info, col_refresh = st.columns([3, 1])
-    with col_refresh:
-        refresh = st.button("↻  REFRESH", use_container_width=True)
-
-    if refresh or True:
-        resp, code = api_get(f"/nlp/index/info/{project_id}")
-
-        if code == 200:
-            info = resp.get("collection_info", {})
-
-            # Metrics row
-            c1, c2, c3, c4 = st.columns(4)
-            vectors_count = info.get("vectors_count", info.get("points_count", "—"))
-            segments      = info.get("segments_count", "—")
-            status_val    = info.get("status", "—")
-            dim           = info.get("config", {}).get("params", {}).get("vectors", {}).get("size", "—")
-
-            with c1:
-                st.markdown(f'<div class="metric-card"><div class="metric-label">VECTORS</div><div class="metric-value">{vectors_count}</div></div>', unsafe_allow_html=True)
-            with c2:
-                st.markdown(f'<div class="metric-card"><div class="metric-label">SEGMENTS</div><div class="metric-value">{segments}</div></div>', unsafe_allow_html=True)
-            with c3:
-                st.markdown(f'<div class="metric-card"><div class="metric-label">DIMENSIONS</div><div class="metric-value">{dim}</div></div>', unsafe_allow_html=True)
-            with c4:
-                st.markdown(f'<div class="metric-card"><div class="metric-label">STATUS</div><div class="metric-value" style="font-size:1.1rem;margin-top:4px;">{status_val.upper() if isinstance(status_val, str) else status_val}</div></div>', unsafe_allow_html=True)
-
-            st.markdown("---")
-            st.markdown('<div style="font-size:0.65rem;color:#555570;letter-spacing:2px;margin-bottom:10px;">RAW COLLECTION INFO</div>', unsafe_allow_html=True)
-            st.json(info)
-        else:
-            st.error(f"Could not fetch project info: {resp.get('signal', resp)}")
-            st.markdown('<div style="font-size:0.8rem;color:#555570;margin-top:0.5rem;">Make sure the project has been indexed first.</div>', unsafe_allow_html=True)
+# ─────────────────────────────────────────────
+# FOOTER
+# ─────────────────────────────────────────────
+st.markdown("""
+<div class="footer">
+    <div class="footer-project">CSAI-810 Project · Team 35</div>
+    <div class="footer-names">Osama Elkhuribi &amp; Esraa Nematalla</div>
+    <div class="footer-tech">Ollama · Qdrant · FastAPI · Streamlit</div>
+</div>
+""", unsafe_allow_html=True)

@@ -106,6 +106,14 @@ async def get_project_index_info(request: Request, project_id: str):
 
     collection_info = nlp_controller.get_vector_db_collection_info(project=project)
 
+    if collection_info is None:
+        return JSONResponse(
+            content={
+                "signal": "collection_not_found",
+                "collection_info": {}
+            }
+        )
+
     return JSONResponse(
         content={
             "signal": ResponseSignal.VECTORDB_COLLECTION_RETRIEVED.value,
