@@ -98,12 +98,15 @@ class NLPController(BaseController):
             text=query,
             limit=limit,
         )
+        print(f"DEBUG retrieved_documents: {retrieved_documents}")
 
         if not retrieved_documents or len(retrieved_documents) == 0:
+            print("DEBUG: no documents retrieved — check embedding or vector DB")
             return answer, full_prompt, chat_history
         
         # step2: Construct LLM prompt
         system_prompt = self.template_parser.get("rag", "system_prompt")
+        print(f"DEBUG system_prompt: {system_prompt}")
 
         documents_prompts = "\n".join([
             self.template_parser.get("rag", "document_prompt", {
@@ -132,6 +135,7 @@ class NLPController(BaseController):
             prompt=full_prompt,
             chat_history=chat_history
         )
+        print(f"DEBUG answer: {answer}")
 
         return answer, full_prompt, chat_history
 
