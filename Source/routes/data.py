@@ -20,6 +20,22 @@ data_router = APIRouter(
     tags=["api_v1", "data"],
 )
 
+
+
+
+@data_router.get("/projects")
+async def get_projects(request: Request):
+    project_model = await ProjectModel.create_instance(
+        db_client=request.app.db_client
+    )
+    projects, _ = await project_model.get_all_projects(page=1, page_size=100)
+    return JSONResponse(content={
+        "projects": [
+            {"project_id": p.project_id, "id": str(p.id)}
+            for p in projects
+        ]
+    })
+
 @data_router.post("/upload/{project_id}")
 async def upload_data(request: Request, project_id: str, file: UploadFile,
                       app_settings: Settings = Depends(get_settings)):

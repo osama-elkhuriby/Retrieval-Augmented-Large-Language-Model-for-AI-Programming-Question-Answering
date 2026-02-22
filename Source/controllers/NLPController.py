@@ -3,6 +3,7 @@ from models.db_schemes import Project, DataChunk
 from stores.llm.LLMEnums import DocumentTypeEnum
 from typing import List
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 class NLPController(BaseController):
 
@@ -43,6 +44,7 @@ class NLPController(BaseController):
         # step2: manage items
         texts = [ c.chunk_text for c in chunks ]
         metadata = [ c.chunk_metadata for c in  chunks]
+
         if hasattr(self.embedding_client, 'embed_batch'):
             vectors = self.embedding_client.embed_batch(
                 texts=texts,
@@ -54,6 +56,9 @@ class NLPController(BaseController):
                                                 document_type=DocumentTypeEnum.DOCUMENT.value)
                 for text in texts
             ]
+
+
+            
 
         # step3: create collection if not exists
         _ = self.vectordb_client.create_collection(
