@@ -66,6 +66,17 @@ class OllamaProvider(LLMInterface):
             self.logger.error(f"Ollama embedding failed: {e}")
             return None
 
+    def embed_batch(self, texts: list, document_type: str = None):
+        """Embed multiple texts in parallel using ollama."""
+        import concurrent.futures
+        
+        def _embed(text):
+            return self.embed_text(text, document_type)
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            vectors = list(executor.map(_embed, texts))
+        
+        return vectors
     # -------------------------
     # Generation
     # -------------------------
