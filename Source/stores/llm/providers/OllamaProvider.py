@@ -66,6 +66,23 @@ class OllamaProvider(LLMInterface):
             self.logger.error(f"Ollama embedding failed: {e}")
             return None
 
+    def embed_batch(self, texts: list, document_type: str = None):
+        """Embed multiple texts using Ollama's batch endpoint."""
+        try:
+            import requests
+            response = requests.post(
+                "http://localhost:11434/api/embed",
+                json={
+                    "model": self.embedding_model,
+                    "input": [self.process_text(t) for t in texts]
+                },
+                timeout=None
+            )
+            data = response.json()
+            return data.get("embeddings", [])
+        except Exception as e:
+            self.logger.error(f"Ollama batch embedding failed: {e}")
+            return [None] * len(texts)
     # -------------------------
     # Generation
     # -------------------------

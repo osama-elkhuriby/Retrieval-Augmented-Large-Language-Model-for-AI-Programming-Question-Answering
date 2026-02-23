@@ -33,8 +33,10 @@ class QdrantDBProvider(VectorDBInterface):
         return self.client.get_collections()
     
     def get_collection_info(self, collection_name: str) -> dict:
+        if not self.is_collection_existed(collection_name):
+            return None
         return self.client.get_collection(collection_name=collection_name)
-    
+        
     def delete_collection(self, collection_name: str):
         if self.is_collection_existed(collection_name):
             return self.client.delete_collection(collection_name=collection_name)
