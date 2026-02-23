@@ -49,3 +49,4 @@ $ uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```bash
 $ python rag_gui.py
 ```
+#### That's all
