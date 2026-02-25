@@ -6,8 +6,10 @@ aiofiles==25.1.0
 langchain==1.2.8
 PyMuPDF==1.26.7
 motor==3.7.1
-qdrant-client==1.16.3
+qdrant-client==1.16.2
 openai==2.2.0
-cohere=5.5.8
+cohere==5.5.8
+langchain-community==0.0.38
+
 
 

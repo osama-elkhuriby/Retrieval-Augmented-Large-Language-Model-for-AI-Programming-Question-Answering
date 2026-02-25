@@ -32,7 +32,9 @@ $ irm https://ollama.com/install.ps1 | iex
 
 ### Setup the environments variables
 ```bash
+$ cd Source
 $ cp .env.example .env
+$ cd ..
 ```
 ### Run Docker Compose Services
 ```bash
@@ -43,10 +45,11 @@ $ sudo docker compose up -d
 
 ### Run FastAPI server
 ```bash
+$ cd Source
 $ uvicorn main:app --reload --host 0.0.0.0 --port 5000
 ```
 ### Run GUI
 ```bash
-$ python rag_gui.py
+$ streamlit run rag_app.py
 ```
 #### That's all
