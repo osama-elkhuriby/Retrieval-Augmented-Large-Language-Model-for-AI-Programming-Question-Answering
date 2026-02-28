@@ -10,6 +10,8 @@ qdrant-client==1.16.2
 openai==2.2.0
 cohere==5.5.8
 langchain-community==0.0.38
+streamlit==1.32.0
+
 
 
 
