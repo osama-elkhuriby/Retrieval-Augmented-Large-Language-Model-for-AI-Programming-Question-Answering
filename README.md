@@ -4,7 +4,7 @@ A small-scale AI assistant for answering questions about AI programming (Python,
 
 ## Recommended Setup
 
-### Download Miniconda form https://www.anaconda.com/download
+### Download Miniconda from https://www.anaconda.com/download
 
 ### Steps to install WSL:
 
@@ -29,19 +29,23 @@ $ pip install -r requirements.txt
 ```bash
 $ irm https://ollama.com/install.ps1 | iex
 ```
+### Download Studio 3T from https://robomongo.org/
 
-### Setup the environments variables
+### Setup the environment variables
 ```bash
 $ cd Source
 $ cp .env.example .env
 $ cd ..
 ```
+#### Put your own Values in .env 
+
 ### Run Docker Compose Services
 ```bash
 $ cd docker
 $ cp .env.example .env
 $ sudo docker compose up -d
 ```
+#### Put your own Values in .env 
 
 ### Run FastAPI server
 ```bash
